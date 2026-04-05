@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Especias del Mundo | Catálogo</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #fdfaf5;
+            color: #333;
+        }
+
+        /* Hero Slider */
+        .hero-slider {
+            position: relative;
+            height: 75vh;
+            min-height: 420px;
+            overflow: hidden;
+        }
+        .slides {
+            display: flex;
+            height: 100%;
+            transition: transform 0.8s ease-in-out;
+        }
+        .slide {
+            min-width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: white;
+            position: relative;
+        }
+        .slide::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(rgba(0,0,0,0.55), rgba(0,0,0,0.7));
+        }
+        .slide-content {
+            position: relative;
+            z-index: 2;
+            padding: 20px;
+        }
+        .slide-content h1 {
+            font-size: 3.2rem;
+            margin-bottom: 10px;
+        }
+        @media (max-width: 768px) {
+            .slide-content h1 { font-size: 2.4rem; }
+        }
+
+        .slider-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0,0,0,0.5);
+            color: white;
+            border: none;
+            width: 45px;
+            height: 45px;
+            font-size: 1.8rem;
+            border-radius: 50%;
+            cursor: pointer;
+            z-index: 10;
+        }
+        .prev { left: 15px; }
+        .next { right: 15px; }
+
+        .dots {
+            position: absolute;
+            bottom: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            z-index: 10;
+        }
+        .dot {
+            width: 12px;
+            height: 12px;
+            background: rgba(255,255,255,0.7);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        .dot.active { background: #d97706; transform: scale(1.4); }
+
+        /* Barra superior con botones sociales */
+        .top-bar {
+            position: sticky;
+            top: 0;
+            background: white;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .top-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .top-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .social-btn {
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 1.3rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .fb-btn { background: #1877F2; }
+        .wa-btn { background: #25D366; }
+
+        .cart-icon {
+            font-size: 1.9rem;
+            cursor: pointer;
+            position: relative;
+        }
+        .cart-count {
+            position: absolute;
+            top: -8px;
+            right: -10px;
+            background: #d97706;
+            color: white;
+            font-size: 0.8rem;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Filtros y Catálogo */
+        .filters {
+            padding: 18px 0;
+            background: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .filters-container {
+            max-width: 1300px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .search-input, .category-select {
+            padding: 14px 16px;
+            border: 2px solid #e5d5b8;
+            border-radius: 12px;
+            font-size: 1.05rem;
+        }
+        .search-input { flex: 1; min-width: 220px; }
+
+        .catalog {
+            padding: 50px 20px;
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 25px;
+        }
+        .card {
+            background: white;
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: 0 8px 25px rgba(139, 69, 19, 0.12);
+            transition: all 0.3s;
+        }
+        .card:hover { transform: translateY(-8px); }
+        .card img {
+            width: 100%;
+            height: 220px;
+            object-fit: cover;
+        }
+        .card-body {
+            padding: 20px;
+        }
+        .price {
+            font-size: 1.6rem;
+            font-weight: bold;
+            color: #854d0e;
+        }
+        .btn-add {
+            width: 100%;
+            padding: 14px;
+            background: #854d0e;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        /* Carrito */
+        .cart-sidebar {
+            position: fixed;
+            top: 0;
+            right: -100%;
+            width: 100%;
+            max-width: 400px;
+            height: 100%;
+            background: white;
+            box-shadow: -5px 0 30px rgba(0,0,0,0.3);
+            transition: right 0.4s ease;
+            z-index: 2000;
+            overflow-y: auto;
+        }
+        .cart-sidebar.open { right: 0; }
+
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            display: none;
+            z-index: 1500;
+        }
+        .overlay.show { display: block; }
+
+        .cart-header {
+            background: #78350f;
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .cart-item {
+            padding: 15px 20px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            gap: 15px;
+        }
+        .cart-item img {
+            width: 70px;
+            height: 70px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+        .cart-total {
+            padding: 20px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-align: center;
+            border-top: 2px solid #ddd;
+            background: #f9f5eb;
+        }
+
+        .payment-options {
+            padding: 20px;
+        }
+        .payment-btn {
+            width: 100%;
+            padding: 16px;
+            margin-bottom: 12px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .btn-paypal { background: #d97706; color: white; }
+        .btn-nequi { background: #4CAF50; color: white; }
+        .btn-n1co  { background: #00BFFF; color: white; }
+    </style>
+</head>
+<body>
+
+    <!-- Hero Slider -->
+    <div class="hero-slider">
+        <div class="slides" id="slides"></div>
+        <button class="slider-btn prev" onclick="prevSlide()">‹</button>
+        <button class="slider-btn next" onclick="nextSlide()">›</button>
+        <div class="dots" id="dots"></div>
+    </div>
+
+    <!-- Barra superior con Facebook y WhatsApp -->
+    <div class="top-bar">
+        <div class="top-left">
+            <h2>🌿 Especias del Mundo</h2>
+        </div>
+        <div class="top-right">
+            <button onclick="window.open('https://facebook.com/tu-pagina', '_blank')" class="social-btn fb-btn" title="Facebook">
+                f
+            </button>
+            <button onclick="window.open('https://wa.me/503XXXXXXXXX?text=Hola,%20quiero%20información%20sobre%20tus%20especias', '_blank')" 
+                    class="social-btn wa-btn" title="WhatsApp">
+                📱
+            </button>
+            <div class="cart-icon" onclick="toggleCart()">
+                🛒 <span id="cart-count" class="cart-count">0</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <section class="filters">
+        <div class="filters-container">
+            <input type="text" id="search" placeholder="🔍 Buscar especias..." class="search-input">
+            <select id="category" class="category-select">
+                <option value="">Todas las categorías</option>
+                <option value="aromaticas">Aromáticas</option>
+                <option value="picantes">Picantes</option>
+                <option value="dulces">Dulces y Postres</option>
+                <option value="exoticas">Exóticas</option>
+            </select>
+        </div>
+    </section>
+
+    <!-- Catálogo -->
+    <section class="catalog">
+        <div class="grid" id="grid"></div>
+    </section>
+
+    <!-- Carrito -->
+    <div class="overlay" id="overlay" onclick="toggleCart()"></div>
+    <div class="cart-sidebar" id="cart-sidebar">
+        <div class="cart-header">
+            <h3>Tu Carrito de Compras</h3>
+            <span onclick="toggleCart()" style="cursor:pointer; font-size:1.8rem;">✕</span>
+        </div>
+        
+        <div id="cart-items"></div>
+        
+        <div class="cart-total">
+            Total: $<span id="cart-total">0.00</span> USD
+        </div>
+
+        <!-- Opciones de Pago -->
+        <div class="payment-options">
+            <button onclick="payWithPayPal()" class="payment-btn btn-paypal">
+                💳 Pagar con PayPal
+            </button>
+            <button onclick="payWithNequi()" class="payment-btn btn-nequi">
+                📱 Pagar con Nequi
+            </button>
+            <button onclick="payWithN1co()" class="payment-btn btn-n1co">
+                💳 Pagar con n1co
+            </button>
+        </div>
+
+        <button onclick="clearCart()" style="margin: 0 20px 25px; width: calc(100% - 40px); padding: 14px; background:#eee; border:none; border-radius:12px;">
+            Vaciar Carrito
+        </button>
+    </div>
+
+    <!-- PayPal SDK -->
+    <script src="https://www.paypal.com/sdk/js?client-id=TU_CLIENT_ID_DE_PAYPAL&currency=USD"></script>
+
+    <script>
+        // SLIDESHOW
+        const slidesData = [
+            { img: "https://source.unsplash.com/random/1600x900/?spices,herbs", title: "Especias del Mundo", text: "Aromas y sabores auténticos" },
+            { img: "https://source.unsplash.com/random/1600x900/?turmeric", title: "Cúrcuma Orgánica", text: "El oro de la cocina" },
+            { img: "https://source.unsplash.com/random/1600x900/?saffron,cinnamon", title: "Azafrán y Canela", text: "Lujo y dulzura" }
+        ];
+
+        let currentSlide = 0;
+
+        function createSlides() {
+            const container = document.getElementById('slides');
+            const dots = document.getElementById('dots');
+            container.innerHTML = ''; dots.innerHTML = '';
+
+            slidesData.forEach((slide, i) => {
+                const div = document.createElement('div');
+                div.className = 'slide';
+                div.style.backgroundImage = `url('${slide.img}')`;
+                div.innerHTML = `<div class="slide-content"><h1>${slide.title}</h1><p>${slide.text}</p></div>`;
+                container.appendChild(div);
+
+                const dot = document.createElement('div');
+                dot.className = `dot ${i===0 ? 'active' : ''}`;
+                dot.onclick = () => goToSlide(i);
+                dots.appendChild(dot);
+            });
+        }
+
+        function goToSlide(n) {
+            currentSlide = n;
+            document.getElementById('slides').style.transform = `translateX(-${n*100}%)`;
+            document.querySelectorAll('.dot').forEach((d,i) => d.classList.toggle('active', i===n));
+        }
+
+        function nextSlide() { currentSlide = (currentSlide + 1) % slidesData.length; goToSlide(currentSlide); }
+        function prevSlide() { currentSlide = (currentSlide - 1 + slidesData.length) % slidesData.length; goToSlide(currentSlide); }
+
+        // Datos de especias
+        const especias = [
+            { id:1, nombre:"Cúrcuma Orgánica", precio:4.99, imagen:"https://source.unsplash.com/random/600x400/?turmeric", categoria:"aromaticas" },
+            { id:2, nombre:"Pimienta Negra en Grano", precio:5.49, imagen:"https://source.unsplash.com/random/600x400/?blackpepper", categoria:"picantes" },
+            { id:3, nombre:"Canela de Ceilán", precio:6.99, imagen:"https://source.unsplash.com/random/600x400/?cinnamon", categoria:"dulces" },
+            { id:4, nombre:"Comino Molido", precio:3.79, imagen:"https://source.unsplash.com/random/600x400/?cumin", categoria:"aromaticas" },
+            { id:5, nombre:"Azafrán Premium", precio:24.99, imagen:"https://source.unsplash.com/random/600x400/?saffron", categoria:"exoticas" },
+            { id:6, nombre:"Chile Ancho en Polvo", precio:4.29, imagen:"https://source.unsplash.com/random/600x400/?chili", categoria:"picantes" }
+        ];
+
+        let cart = [];
+
+        function addToCart(id) {
+            const product = especias.find(p => p.id === id);
+            const existing = cart.find(item => item.id === id);
+            if (existing) existing.quantity += 1;
+            else cart.push({...product, quantity: 1});
+            updateCartUI();
+            alert(`✅ ${product.nombre} añadido al carrito`);
+        }
+
+        function updateCartUI() {
+            const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+            document.getElementById('cart-count').textContent = count;
+
+            const container = document.getElementById('cart-items');
+            container.innerHTML = '';
+            let total = 0;
+
+            if (cart.length === 0) {
+                container.innerHTML = `<p style="text-align:center; padding:40px; color:#777;">Tu carrito está vacío</p>`;
+                return;
+            }
+
+            cart.forEach((item, index) => {
+                const subtotal = item.precio * item.quantity;
+                total += subtotal;
+                const div = document.createElement('div');
+                div.className = 'cart-item';
+                div.innerHTML = `
+                    <img src="${item.imagen}" alt="${item.nombre}">
+                    <div style="flex:1">
+                        <strong>${item.nombre}</strong><br>
+                        <small>$${item.precio.toFixed(2)} × ${item.quantity}</small>
+                        <div style="margin-top:8px">
+                            <button onclick="changeQuantity(${index}, -1)" style="width:32px">–</button>
+                            <button onclick="changeQuantity(${index}, 1)" style="width:32px">+</button>
+                            <button onclick="removeFromCart(${index})" style="margin-left:15px;color:red;background:none;border:none">Eliminar</button>
+                        </div>
+                    </div>
+                    <div style="text-align:right;font-weight:bold">$${subtotal.toFixed(2)}</div>
+                `;
+                container.appendChild(div);
+            });
+
+            document.getElementById('cart-total').textContent = total.toFixed(2);
+        }
+
+        function changeQuantity(index, change) {
+            cart[index].quantity += change;
+            if (cart[index].quantity < 1) cart.splice(index, 1);
+            updateCartUI();
+        }
+
+        function removeFromCart(index) {
+            cart.splice(index, 1);
+            updateCartUI();
+        }
+
+        function clearCart() {
+            if (confirm("¿Vaciar todo el carrito?")) {
+                cart = [];
+                updateCartUI();
+                toggleCart();
+            }
+        }
+
+        function toggleCart() {
+            document.getElementById('cart-sidebar').classList.toggle('open');
+            document.getElementById('overlay').classList.toggle('show');
+        }
+
+        // === Opciones de Pago ===
+        function payWithPayPal() {
+            const total = parseFloat(document.getElementById('cart-total').textContent);
+            if (total <= 0) return alert("El carrito está vacío");
+            window.open(`https://www.paypal.com/paypalme/edujim22/${total.toFixed(2)}`, '_blank');
+        }
+
+        function payWithNequi() {
+            const total = parseFloat(document.getElementById('cart-total').textContent);
+            if (total <= 0) return alert("El carrito está vacío");
+            const link = "https://tu-link-de-nequi.com"; // ← Cambia por tu link real
+            if (confirm(`¿Pagar $${total.toFixed(2)} con Nequi?`)) window.open(link, '_blank');
+        }
+
+        function payWithN1co() {
+            const total = parseFloat(document.getElementById('cart-total').textContent);
+            if (total <= 0) return alert("El carrito está vacío");
+            const link = "https://tu-link-de-n1co.com"; // ← Cambia por tu link real de n1co
+            if (confirm(`¿Pagar $${total.toFixed(2)} con n1co?`)) window.open(link, '_blank');
+        }
+
+        // Catálogo y filtros
+        function renderCatalog(filtered) {
+            const container = document.getElementById('grid');
+            container.innerHTML = '';
+            filtered.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <img src="${item.imagen}" alt="${item.nombre}">
+                    <div class="card-body">
+                        <h3>${item.nombre}</h3>
+                        <div class="price">$${item.precio.toFixed(2)}</div>
+                        <button class="btn-add" onclick="addToCart(${item.id})">Añadir al carrito</button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function filterProducts() {
+            const text = document.getElementById('search').value.toLowerCase();
+            const cat = document.getElementById('category').value;
+            const filtered = especias.filter(item => 
+                item.nombre.toLowerCase().includes(text) && (!cat || item.categoria === cat)
+            );
+            renderCatalog(filtered);
+        }
+
+        // Inicializar
+        window.onload = function() {
+            createSlides();
+            goToSlide(0);
+            setInterval(nextSlide, 5000);
+
+            renderCatalog(especias);
+
+            document.getElementById('search').addEventListener('input', filterProducts);
+            document.getElementById('category').addEventListener('change', filterProducts);
+        };
+    </script>
+</body>
+</html>
