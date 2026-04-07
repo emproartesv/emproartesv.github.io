@@ -1,0 +1,33 @@
+<style>
+  .slider-container {
+    width: 100%;
+    max-width: 800px;
+    margin: auto;
+    overflow: hidden;
+    border-radius: 10px;
+  }
+  .slider {
+    display: flex;
+    width: 300%;
+    animation: slide 12s infinite;
+  }
+  .slider img {
+    width: 100%;
+    height: 400px;
+    object-fit: cover;
+  }
+  @keyframes slide {
+    0% { transform: translateX(0); }
+    33% { transform: translateX(-100%); }
+    66% { transform: translateX(-200%); }
+    100% { transform: translateX(0); }
+  }
+</style>
+
+<div class="slider-container">
+  <div class="slider">
+    <img src="URL_IMAGEN_1" alt="Imagen 1">
+    <img src="URL_IMAGEN_2" alt="Imagen 2">
+    <img src="URL_IMAGEN_3" alt="Imagen 3">
+  </div>
+</div>
