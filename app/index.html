@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#0a0a0a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="manifest.json">
+    <title>Eduar Shop</title>
+    <script src="https://maps.googleapis.com/maps/api/js?key=TU_API_KEY"></script>
+    <style>
+        :root {
+            --bg: #0a0a0a;
+            --card: #161616;
+            --primary: #ccff00; /* Verde Limón */
+            --accent: #bf00ff;  /* Púrpura Neón */
+            --warning: #ff5f00; /* Naranja Fluorescente */
+            --text: #ffffff;
+            --border: #222;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { 
+            font-family: -apple-system, system-ui, sans-serif; 
+            background: var(--bg); color: var(--text); margin: 0; 
+            padding: 70px 0 90px 0; overflow-x: hidden;
+        }
+
+        /* HEADER */
+        .header {
+            position: fixed; top: 0; width: 100%; height: 65px;
+            background: rgba(10, 10, 10, 0.95); backdrop-filter: blur(10px);
+            display: flex; align-items: center; padding: 0 20px;
+            border-bottom: 1px solid var(--border); z-index: 1000;
+        }
+        .logo {
+            background: var(--warning); color: #000;
+            font-weight: 900; font-size: 0.9rem; padding: 5px 12px;
+            border-radius: 5px; text-transform: uppercase; letter-spacing: 1px;
+        }
+
+        /* BOTONES NATIVOS */
+        .btn {
+            width: 100%; border: none; border-radius: 12px; padding: 18px;
+            font-weight: bold; font-size: 1rem; text-transform: uppercase;
+            cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+        .btn:active { transform: scale(0.96); opacity: 0.8; }
+        .btn-primary { background: var(--primary); color: #000; }
+        .btn-outline { background: transparent; border: 1px solid var(--accent); color: var(--accent); }
+
+        /* INPUTS MODERNOS */
+        .input-group { margin-bottom: 15px; }
+        label { display: block; font-size: 0.75rem; color: #888; margin-bottom: 6px; text-transform: uppercase; padding-left: 5px; }
+        input, select {
+            width: 100%; background: var(--card); border: 1px solid var(--border);
+            padding: 16px; color: #fff; border-radius: 12px; font-size: 1rem;
+        }
+        input:focus { border-color: var(--primary); outline: none; background: #1f1f1f; }
+
+        /* VISTAS */
+        .view { display: none; padding: 0 15px; animation: slideUp 0.3s ease; }
+        .view.active { display: block; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* TARJETAS */
+        .card { background: var(--card); border-radius: 16px; padding: 15px; margin-bottom: 15px; border: 1px solid var(--border); }
+        .card-title { font-size: 0.85rem; color: var(--primary); font-weight: bold; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+
+        /* LISTAS TÁCTILES */
+        .list-item { 
+            background: var(--card); padding: 18px; border-radius: 14px; margin-bottom: 10px;
+            border-left: 4px solid var(--accent); display: flex; justify-content: space-between; align-items: center;
+        }
+        .list-item b { display: block; font-size: 1.1rem; color: var(--primary); }
+        .list-item small { color: #888; }
+
+        /* BARRA DE NAVEGACIÓN INFERIOR */
+        .nav-bar {
+            position: fixed; bottom: 0; width: 100%; height: 80px;
+            background: var(--card); border-top: 1px solid var(--border);
+            display: flex; justify-content: space-around; align-items: center;
+            padding-bottom: env(safe-area-inset-bottom); z-index: 1000;
+        }
+        .nav-item { 
+            color: #555; text-align: center; font-size: 0.65rem; 
+            text-transform: uppercase; font-weight: bold; width: 20%;
+        }
+        .nav-item.active { color: var(--primary); }
+        .nav-icon { font-size: 1.5rem; display: block; margin-bottom: 4px; }
+
+        /* TABLA DE PEDIDO */
+        .order-row { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px; margin-bottom: 10px; align-items: center; }
+        .price-badge { background: #222; padding: 8px; border-radius: 8px; text-align: center; font-weight: bold; color: var(--primary); }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <div class="logo">Eduar Shop</div>
+        <div style="margin-left: auto; font-size: 0.8rem; font-weight: bold; color: var(--primary);" id="status-title">Dashboard</div>
+    </header>
+
+    <div id="inicio" class="view active">
+        <div id="mapa-gps" style="width:100%; height:180px; border-radius:16px; margin-bottom:15px; background:#111;"></div>
+        <div class="card" id="resumen-ventas">Cargando datos...</div>
+    </div>
+
+    <div id="inventario" class="view">
+        <div class="card">
+            <div class="card-title">Añadir Producto</div>
+            <div class="input-group"><label>Nombre</label><input type="text" id="p-nom" placeholder="Ej. Achiote Molido"></div>
+            <div style="display:flex; gap:10px;">
+                <div class="input-group" style="flex:1"><label>Precio $</label><input type="number" id="p-pre" step="0.01"></div>
+                <div class="input-group" style="flex:1"><label>Stock</label><input type="number" id="p-sto"></div>
+            </div>
+            <button class="btn btn-primary" onclick="guardarProducto()">+ Agregar Item</button>
+        </div>
+        <div id="lista-p"></div>
+    </div>
+
+    <div id="cliente" class="view">
+        <div class="card">
+            <div class="card-title">Registro de Cliente</div>
+            <input type="hidden" id="c-id">
+            <div class="input-group"><label>Nombres y Apellidos</label><input type="text" id="c-nom"></div>
+            <div class="input-group"><label>WhatsApp</label><input type="tel" id="c-wa" placeholder="503..."></div>
+            <div class="input-group"><label>Dirección</label><input type="text" id="c-dir"></div>
+            <div class="botones-faja" style="display:flex; gap:10px;">
+                <button class="btn btn-primary" id="c-btn" onclick="guardarCliente()">Guardar</button>
+                <button class="btn btn-outline" onclick="limpiarCliente()">Limpiar</button>
+            </div>
+        </div>
+        <div id="lista-c"></div>
+    </div>
+
+    <div id="venta" class="view">
+        <input type="text" id="busqueda-c" placeholder="🔍 Buscar cliente..." onkeyup="filtrarClientes()" style="margin-bottom:15px;">
+        <div id="lista-c-venta"></div>
+    </div>
+
+    <div id="pos" class="view">
+        <div class="card">
+            <div class="card-title" id="pos-cliente">Cliente: Nuevo</div>
+            <div id="pos-items"></div>
+            <div style="border-top:1px solid #333; margin-top:15px; padding-top:15px; display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-weight:bold; color:#888;">TOTAL A PAGAR</span>
+                <span id="pos-total" style="font-size: 2rem; font-weight: 900; color: var(--primary);">$0.00</span>
+            </div>
+            <button class="btn btn-primary" style="margin-top:20px;" onclick="finalizarVenta()">Cobrar y Enviar</button>
+        </div>
+    </div>
+
+    <div id="reporte" class="view">
+        <div id="lista-v"></div>
+    </div>
+
+    <nav class="nav-bar">
+        <div class="nav-item active" onclick="nav('inicio')"><span class="nav-icon">📍</span>Inicio</div>
+        <div class="nav-item" onclick="nav('inventario')"><span class="nav-icon">📦</span>Invent</div>
+        <div class="nav-item" onclick="nav('cliente')"><span class="nav-icon">👤</span>Clientes</div>
+        <div class="nav-item" onclick="nav('venta')"><span class="nav-icon">🛒</span>Venta</div>
+        <div class="nav-item" onclick="nav('reporte')"><span class="nav-icon">📊</span>Report</div>
+    </nav>
+
+    <script>
+        // PERSISTENCIA
+        let DB = {
+            clientes: JSON.parse(localStorage.getItem('es_c')) || [],
+            productos: JSON.parse(localStorage.getItem('es_p')) || [],
+            ventas: JSON.parse(localStorage.getItem('es_v')) || []
+        };
+        let cSel = null;
+
+        function save() {
+            localStorage.setItem('es_c', JSON.stringify(DB.clientes));
+            localStorage.setItem('es_p', JSON.stringify(DB.productos));
+            localStorage.setItem('es_v', JSON.stringify(DB.ventas));
+            updateResumen();
+        }
+
+        // NAVEGACIÓN
+        function nav(id) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            
+            const idx = {inicio:0, inventario:1, cliente:2, venta:3, pos:3, reporte:4}[id];
+            document.querySelectorAll('.nav-item')[idx].classList.add('active');
+            document.getElementById('status-title').innerText = id.toUpperCase();
+
+            if(id==='inventario') renderP();
+            if(id==='cliente') renderC();
+            if(id==='venta') renderCVenta();
+            if(id==='reporte') renderV();
+            window.scrollTo(0,0);
+        }
+
+        // INVENTARIO
+        function guardarProducto() {
+            const n = document.getElementById('p-nom').value;
+            const p = document.getElementById('p-pre').value;
+            const s = document.getElementById('p-sto').value;
+            if(!n || !p) return;
+            DB.productos.push({id:Date.now(), nom:n, pre:parseFloat(p), sto:parseInt(s)});
+            save(); renderP();
+            document.getElementById('p-nom').value = ""; document.getElementById('p-pre').value = "";
+        }
+
+        function renderP() {
+            document.getElementById('lista-p').innerHTML = DB.productos.map(p => `
+                <div class="list-item">
+                    <div><b>${p.nom}</b><small>$${p.pre.toFixed(2)} | Stock: ${p.sto}</small></div>
+                    <button onclick="borrarP(${p.id})" style="background:none; border:none; font-size:1.2rem;">🗑️</button>
+                </div>
+            `).join('');
+        }
+        function borrarP(id) { DB.productos = DB.productos.filter(p=>p.id!==id); save(); renderP(); }
+
+        // CLIENTES
+        function guardarCliente() {
+            const id = document.getElementById('c-id').value || Date.now();
+            const nuevo = {id, nom: document.getElementById('c-nom').value, wa: document.getElementById('c-wa').value, dir: document.getElementById('c-dir').value};
+            const idx = DB.clientes.findIndex(c => c.id == id);
+            if(idx>-1) DB.clientes[idx] = nuevo; else DB.clientes.push(nuevo);
+            save(); limpiarCliente(); renderC();
+        }
+
+        function renderC() {
+            document.getElementById('lista-c').innerHTML = DB.clientes.map(c => `
+                <div class="list-item" onclick="editC(${c.id})">
+                    <div><b>${c.nom}</b><small>${c.dir}</small></div>
+                    <span>✏️</span>
+                </div>
+            `).join('');
+        }
+        function editC(id) {
+            const c = DB.clientes.find(x => x.id == id);
+            document.getElementById('c-id').value = c.id;
+            document.getElementById('c-nom').value = c.nom;
+            document.getElementById('c-wa').value = c.wa;
+            document.getElementById('c-dir').value = c.dir;
+            document.getElementById('c-btn').innerText = "Actualizar";
+            window.scrollTo(0,0);
+        }
+        function limpiarCliente() { document.querySelectorAll('#cliente input').forEach(i=>i.value=""); document.getElementById('c-btn').innerText = "Guardar"; }
+
+        // POS
+        function renderCVenta() {
+            document.getElementById('lista-c-venta').innerHTML = DB.clientes.map(c => `
+                <div class="list-item" onclick="abrirPOS(${c.id})">
+                    <b>${c.nom}</b><span>🛒</span>
+                </div>
+            `).join('');
+        }
+
+        function abrirPOS(id) {
+            cSel = DB.clientes.find(c => c.id == id);
+            document.getElementById('pos-cliente').innerText = "Cliente: " + cSel.nom;
+            const container = document.getElementById('pos-items');
+            container.innerHTML = "";
+            const opts = `<option value="">---</option>` + DB.productos.map(p => `<option value="${p.id}">${p.nom}</option>`).join('');
+            for(let i=0; i<6; i++) {
+                container.innerHTML += `
+                <div class="order-row">
+                    <select class="pos-p" onchange="calc()">${opts}</select>
+                    <input type="number" class="pos-q" value="0" min="0" onchange="calc()" onfocus="this.select()">
+                    <div class="price-badge pos-s">$0</div>
+                </div>`;
+            }
+            calc(); nav('pos');
+        }
+
+        function calc() {
+            let total = 0;
+            const sels = document.querySelectorAll('.pos-p');
+            const ques = document.querySelectorAll('.pos-q');
+            const subs = document.querySelectorAll('.pos-s');
+            sels.forEach((s, i) => {
+                if(s.value && ques[i].value > 0) {
+                    const pr = DB.productos.find(x => x.id == s.value).pre;
+                    const sub = pr * ques[i].value;
+                    subs[i].innerText = `$${sub.toFixed(2)}`;
+                    total += sub;
+                } else subs[i].innerText = "$0";
+            });
+            document.getElementById('pos-total').innerText = `$${total.toFixed(2)}`;
+        }
+
+        function finalizarVenta() {
+            let total = 0; let items = [];
+            document.querySelectorAll('.pos-p').forEach((s, i) => {
+                const q = parseInt(document.querySelectorAll('.pos-q')[i].value);
+                if(s.value && q > 0) {
+                    const p = DB.productos.find(x => x.id == s.value);
+                    items.push(`${q}x ${p.nom}`);
+                    p.sto -= q;
+                    total += (p.pre * q);
+                }
+            });
+            if(!items.length) return;
+            DB.ventas.push({id:Date.now(), cliente:cSel.nom, total, fecha:new Date().toLocaleString(), detalle: items.join(", ")});
+            save();
+            alert("✅ ¡Venta registrada!");
+            const msg = `*ORDEN - EDUAR SHOP*%0ACliente: ${cSel.nom}%0A---%0A${items.join("%0A")}%0A---%0A*TOTAL: $${total.toFixed(2)}*`;
+            window.open(`https://wa.me/${cSel.wa}?text=${msg}`, '_blank');
+            nav('reporte');
+        }
+
+        function renderV() {
+            document.getElementById('lista-v').innerHTML = DB.ventas.map(v => `
+                <div class="card">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                        <b style="color:var(--primary)">${v.cliente}</b>
+                        <small style="color:#666">${v.fecha}</small>
+                    </div>
+                    <div style="font-size:0.85rem; margin-bottom:10px;">${v.detalle}</div>
+                    <div style="font-weight:900; color:var(--warning)">$${v.total.toFixed(2)}</div>
+                </div>
+            `).reverse().join('');
+        }
+
+        function updateResumen() {
+            document.getElementById('resumen-ventas').innerHTML = `
+                <div style="display:flex; justify-content:space-between;"><span>Ventas Hoy:</span> <b>${DB.ventas.length}</b></div>
+                <div style="display:flex; justify-content:space-between; margin-top:8px;"><span>Clientes:</span> <b>${DB.clientes.length}</b></div>
+            `;
+        }
+
+        function inicializarMapa() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(pos => {
+                    const centro = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                    new google.maps.Map(document.getElementById("mapa-gps"), { 
+                        zoom: 15, center: centro, disableDefaultUI: true,
+                        styles: [{"stylers":[{"invert_lightness":true},{"hue":"#ccff00"}]}]
+                    });
+                });
+            }
+        }
+        window.onload = () => { inicializarMapa(); updateResumen(); };
+
+        // REGISTRO PWA
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+    </script>
+</body>
+</html>
