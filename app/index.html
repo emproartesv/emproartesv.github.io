@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Eduar Shop - NTV Enterprise</title>
+    <style>
+        :root {
+            --bg: #000000;
+            --card: #080808;
+            --primary: #ccff00; 
+            --accent: #bf00ff;  
+            --warning: #ff5f00; 
+            --danger: #ff3333;
+            --text: #ffffff;
+            --text-dim: #555;
+            --border: #151515;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { 
+            font-family: -apple-system, system-ui, sans-serif; 
+            background: var(--bg); color: var(--text); margin: 0; 
+            padding: 70px 0 90px 0;
+        }
+
+        .header {
+            position: fixed; top: 0; width: 100%; height: 60px;
+            background: rgba(0,0,0,0.9); backdrop-filter: blur(20px);
+            display: flex; align-items: center; padding: 0 20px;
+            border-bottom: 1px solid var(--border); z-index: 1000;
+            font-weight: 900; letter-spacing: 2px;
+        }
+        .header span { color: var(--primary); }
+
+        .view { display: none; padding: 20px; animation: fadeIn 0.4s ease; }
+        .view.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        .card { 
+            background: var(--card); border-radius: 12px; padding: 18px; 
+            margin-bottom: 15px; border: 1px solid var(--border); position: relative;
+        }
+        .label { font-size: 0.6rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 10px; display: block; }
+
+        input, select {
+            width: 100%; background: #000; border: 1px solid var(--border);
+            padding: 15px; color: #fff; border-radius: 8px; margin-bottom: 12px; font-size: 1rem;
+        }
+        input:focus { border-color: var(--primary); }
+
+        .btn {
+            width: 100%; padding: 16px; border-radius: 8px; border: none;
+            font-weight: 700; text-transform: uppercase; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+        .btn-primary { background: var(--primary); color: #000; }
+        .btn-cancel { background: transparent; border: 1px solid var(--border); color: var(--text-dim); margin-top: 10px; }
+
+        /* ACCIONES DE ITEM */
+        .item-actions { position: absolute; right: 15px; top: 15px; display: flex; gap: 8px; }
+        .action-btn { 
+            background: #111; border: 1px solid #222; color: #fff; 
+            width: 32px; height: 32px; border-radius: 6px; font-size: 0.8rem;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .action-btn.edit { color: var(--accent); }
+        .action-btn.del { color: var(--danger); }
+
+        /* DASHBOARD */
+        .stat-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .stat-item { text-align: center; border-right: 1px solid #111; }
+        .stat-val { font-size: 1rem; font-weight: 800; color: var(--primary); display: block; }
+        .stat-lab { font-size: 0.5rem; color: var(--text-dim); text-transform: uppercase; }
+
+        .histo-container {
+            height: 100px; display: flex; align-items: flex-end; justify-content: space-between;
+            margin-top: 10px; border-bottom: 1px solid #111;
+        }
+        .histo-bar { width: 10%; background: var(--accent); border-radius: 2px 2px 0 0; min-height: 2px; }
+
+        .nav-bar {
+            position: fixed; bottom: 0; width: 100%; height: 75px;
+            background: #000; border-top: 1px solid var(--border);
+            display: flex; justify-content: space-around; align-items: center; z-index: 1000;
+        }
+        .nav-item { color: #333; font-size: 0.6rem; font-weight: 800; text-align: center; }
+        .nav-item.active { color: var(--primary); }
+    </style>
+</head>
+<body>
+
+    <header class="header">EDUAR<span>SHOP</span></header>
+
+    <div id="inicio" class="view active">
+        <div class="card">
+            <span class="label">Rendimiento</span>
+            <div class="stat-row">
+                <div class="stat-item"><span id="v-hoy" class="stat-val">$0</span><span class="stat-lab">Hoy</span></div>
+                <div class="stat-item"><span id="v-sem" class="stat-val">$0</span><span class="stat-lab">Semana</span></div>
+                <div class="stat-item"><span id="v-mes" class="stat-val">$0</span><span class="stat-lab">Mes</span></div>
+            </div>
+            <div id="histograma" class="histo-container"></div>
+        </div>
+        <div class="card">
+            <span class="label">Stock Actual</span>
+            <div id="mini-existencia" style="font-size: 0.8rem;"></div>
+        </div>
+    </div>
+
+    <div id="inventario" class="view">
+        <div class="card">
+            <span class="label" id="form-p-title">Nuevo Producto</span>
+            <input type="hidden" id="p-id">
+            <input type="text" id="p-nom" placeholder="Nombre del producto">
+            <input type="number" id="p-pre" placeholder="Precio de venta $">
+            <input type="number" id="p-sto" placeholder="Existencia actual">
+            <button class="btn btn-primary" id="btn-p-save" onclick="saveP()">Sincronizar Datos</button>
+            <button class="btn btn-cancel" id="btn-p-cancel" style="display:none;" onclick="resetFormP()">Cancelar Edición</button>
+        </div>
+        <div id="lista-p"></div>
+    </div>
+
+    <div id="cliente" class="view">
+        <div class="card">
+            <span class="label">Nuevo Cliente</span>
+            <input type="text" id="c-nom" placeholder="Nombre">
+            <input type="tel" id="c-wa" placeholder="WhatsApp">
+            <button class="btn btn-primary" onclick="addC()">Guardar Cliente</button>
+        </div>
+        <div id="lista-c"></div>
+    </div>
+
+    <div id="venta" class="view">
+        <input type="text" placeholder="Buscar cliente..." onkeyup="renderCVenta(this.value)">
+        <div id="lista-c-venta"></div>
+    </div>
+
+    <div id="pos" class="view">
+        <div class="card">
+            <span class="label" id="pos-title">Caja</span>
+            <div id="pos-items"></div>
+            <div style="text-align:right;"><span class="stat-val" id="pos-total" style="font-size:2rem;">$0.00</span></div>
+            <button class="btn btn-primary" onclick="finishV()">Finalizar</button>
+        </div>
+    </div>
+
+    <div id="reporte" class="view">
+        <div id="lista-v"></div>
+    </div>
+
+    <nav class="nav-bar">
+        <div class="nav-item active" onclick="nav('inicio')">INICIO</div>
+        <div class="nav-item" onclick="checkInv()">STOCK</div>
+        <div class="nav-item" onclick="nav('cliente')">CLIE</div>
+        <div class="nav-item" onclick="nav('venta')">VENTA</div>
+        <div class="nav-item" onclick="nav('reporte')">DATA</div>
+    </nav>
+
+    <script>
+        let db = {
+            p: JSON.parse(localStorage.getItem('es_p')) || [],
+            c: JSON.parse(localStorage.getItem('es_c')) || [],
+            v: JSON.parse(localStorage.getItem('es_v')) || []
+        };
+        let curC = null;
+
+        function nav(id) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            if(id === 'inicio') updateDashboard();
+            if(id === 'inventario') renderP();
+            if(id === 'reporte') renderV();
+            if(id === 'venta') renderCVenta();
+        }
+
+        function checkInv() {
+            if(prompt("PASSWORD:") === "NANO") nav('inventario');
+        }
+
+        function sync() {
+            localStorage.setItem('es_p', JSON.stringify(db.p));
+            localStorage.setItem('es_c', JSON.stringify(db.c));
+            localStorage.setItem('es_v', JSON.stringify(db.v));
+            updateDashboard();
+        }
+
+        // --- LÓGICA DE INVENTARIO (CON EDICIÓN) ---
+        function saveP() {
+            const id = document.getElementById('p-id').value;
+            const n = document.getElementById('p-nom').value.trim();
+            const p = parseFloat(document.getElementById('p-pre').value);
+            const s = parseInt(document.getElementById('p-sto').value);
+
+            if(!n || isNaN(p)) return;
+
+            if(id) {
+                // Modo Editar
+                const idx = db.p.findIndex(x => x.id == id);
+                db.p[idx] = { ...db.p[idx], n, p, s };
+                alert("Producto actualizado");
+            } else {
+                // Modo Nuevo
+                db.p.push({ id: Date.now(), n, p, s });
+                alert("Producto registrado");
+            }
+
+            resetFormP();
+            sync();
+            renderP();
+        }
+
+        function editP(id) {
+            const p = db.p.find(x => x.id == id);
+            document.getElementById('p-id').value = p.id;
+            document.getElementById('p-nom').value = p.n;
+            document.getElementById('p-pre').value = p.p;
+            document.getElementById('p-sto').value = p.s;
+            
+            document.getElementById('form-p-title').innerText = "Modificar Producto";
+            document.getElementById('btn-p-save').innerText = "Guardar Cambios";
+            document.getElementById('btn-p-cancel').style.display = "block";
+            window.scrollTo(0,0);
+        }
+
+        function resetFormP() {
+            document.getElementById('p-id').value = "";
+            document.getElementById('p-nom').value = "";
+            document.getElementById('p-pre').value = "";
+            document.getElementById('p-sto').value = "";
+            document.getElementById('form-p-title').innerText = "Nuevo Producto";
+            document.getElementById('btn-p-save').innerText = "Sincronizar Datos";
+            document.getElementById('btn-p-cancel').style.display = "none";
+        }
+
+        function delP(id) {
+            if(confirm("¿Eliminar este producto?")) {
+                db.p = db.p.filter(x => x.id !== id);
+                sync(); renderP();
+            }
+        }
+
+        function renderP() {
+            document.getElementById('lista-p').innerHTML = db.p.map(p => `
+                <div class="card">
+                    <div class="item-actions">
+                        <button class="action-btn edit" onclick="editP(${p.id})">✎</button>
+                        <button class="action-btn del" onclick="delP(${p.id})">✕</button>
+                    </div>
+                    <b style="color:var(--primary)">${p.n}</b><br>
+                    <small>$${p.p.toFixed(2)} | Existencia: ${p.s}</small>
+                </div>
+            `).join('');
+        }
+
+        // --- DASHBOARD ---
+        function updateDashboard() {
+            const ahora = new Date();
+            let hoy = 0, sem = 0, mes = 0;
+            let histData = [0,0,0,0,0,0,0];
+
+            db.v.forEach(v => {
+                const f = new Date(v.ts);
+                const dif = (ahora - f) / (1000 * 86400);
+                if(f.toLocaleDateString() === ahora.toLocaleDateString()) hoy += v.t;
+                if(dif <= 7) sem += v.t;
+                if(dif <= 30) mes += v.t;
+                if(dif < 7) histData[6 - Math.floor(dif)] += v.t;
+            });
+
+            document.getElementById('v-hoy').innerText = `$${hoy.toFixed(0)}`;
+            document.getElementById('v-sem').innerText = `$${sem.toFixed(0)}`;
+            document.getElementById('v-mes').innerText = `$${mes.toFixed(0)}`;
+
+            const max = Math.max(...histData) || 1;
+            document.getElementById('histograma').innerHTML = histData.map(d => `
+                <div class="histo-bar" style="height:${(d/max)*100}%"></div>
+            `).join('');
+
+            document.getElementById('mini-existencia').innerHTML = db.p.map(p => `
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #111; padding:5px 0;">
+                    <span>${p.n}</span> <b>${p.s}</b>
+                </div>
+            `).join('');
+        }
+
+        // --- CLIENTES Y VENTAS ---
+        function addC() {
+            const n = document.getElementById('c-nom').value;
+            const w = document.getElementById('c-wa').value;
+            if(n && w) { db.c.push({id:Date.now(), nom:n, wa:w}); sync(); alert("Cliente OK"); }
+        }
+
+        function renderCVenta(f="") {
+            const data = db.c.filter(x => x.nom.toLowerCase().includes(f.toLowerCase()));
+            document.getElementById('lista-c-venta').innerHTML = data.map(c => `
+                <div class="card" onclick="openPOS(${c.id})">${c.nom}</div>
+            `).join('');
+        }
+
+        function openPOS(id) {
+            curC = db.c.find(x => x.id == id);
+            document.getElementById('pos-items').innerHTML = "";
+            const opts = `<option value="">-</option>` + db.p.map(p => `<option value="${p.id}">${p.n}</option>`).join('');
+            for(let i=0; i<3; i++) {
+                document.getElementById('pos-items').innerHTML += `<div style="display:grid; grid-template-columns:3fr 1fr; gap:5px; margin-bottom:5px;">
+                    <select class="p-s" onchange="calc()">${opts}</select>
+                    <input type="number" class="p-q" placeholder="0" onchange="calc()">
+                </div>`;
+            }
+            nav('pos');
+        }
+
+        function calc() {
+            let t = 0;
+            document.querySelectorAll('.p-s').forEach((s, i) => {
+                const q = document.querySelectorAll('.p-q')[i].value;
+                if(s.value && q > 0) t += db.p.find(x => x.id == s.value).p * q;
+            });
+            document.getElementById('pos-total').innerText = `$${t.toFixed(2)}`;
+        }
+
+        function finishV() {
+            let t = 0; let items = [];
+            document.querySelectorAll('.p-s').forEach((s, i) => {
+                const q = parseInt(document.querySelectorAll('.p-q')[i].value);
+                if(s.value && q > 0) {
+                    const p = db.p.find(x => x.id == s.value);
+                    items.push({n:p.n, q});
+                    t += p.p * q; p.s -= q;
+                }
+            });
+            if(!items.length) return;
+            db.v.push({id:Date.now(), ts: new Date().getTime(), f: new Date().toLocaleString(), c:curC.nom, wa:curC.wa, t, items});
+            sync(); nav('inicio');
+        }
+
+        function renderV() {
+            document.getElementById('lista-v').innerHTML = db.v.map(v => `
+                <div class="card" onclick="delV(${v.id})">
+                    <b>${v.c}</b> <span style="float:right; color:var(--primary)">$${v.t}</span><br>
+                    <small style="color:#444">${v.f}</small>
+                </div>
+            `).reverse().join('');
+        }
+
+        function delV(id) {
+            if(confirm("¿Eliminar recibo?")) { db.v = db.v.filter(x => x.id !== id); sync(); renderV(); }
+        }
+
+        window.onload = updateDashboard;
+    </script>
+</body>
+</html>
